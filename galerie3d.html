@@ -350,6 +350,11 @@ AFRAME.registerComponent('player-movement', {
   <!-- PROMETHEUS (Vollkörper) – hinten links -->
   <a-box position="-2.2 0.06 -4" width="0.90" height="0.12" depth="0.90"
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <!-- Platzhalter während des Ladens -->
+  <a-box id="ph-prometheus" position="-2.2 1.06 -4" width="0.50" height="1.80" depth="0.40"
+    material="color:#b0a898; opacity:0.35; transparent:true"></a-box>
+  <a-text id="pht-prometheus" value="Lädt…" position="-2.2 2.20 -4" align="center"
+    color="#d4b96a" width="2" side="double"></a-text>
   <a-entity id="sc-prometheus"
     gltf-model="url(3d/Meshy_AI_prometheus_0409172841_generate.glb)"
     position="-2.2 0.12 -4"
@@ -362,6 +367,11 @@ AFRAME.registerComponent('player-movement', {
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
   <a-box position=" 2.2 1.13 -4" width="0.58" height="0.06" depth="0.58"
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <!-- Platzhalter während des Ladens -->
+  <a-box id="ph-ludwig" position=" 2.2 1.42 -4" width="0.30" height="0.45" depth="0.30"
+    material="color:#b0a898; opacity:0.35; transparent:true"></a-box>
+  <a-text id="pht-ludwig" value="Lädt…" position=" 2.2 1.85 -4" align="center"
+    color="#d4b96a" width="2" side="double"></a-text>
   <a-entity id="sc-ludwig"
     gltf-model="url(3d/Meshy_AI_Ludwig_0409172157_generate.glb)"
     position=" 2.2 1.16 -4"
@@ -374,6 +384,11 @@ AFRAME.registerComponent('player-movement', {
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
   <a-box position="-2.2 1.13 -1" width="0.58" height="0.06" depth="0.58"
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <!-- Platzhalter während des Ladens -->
+  <a-box id="ph-irene" position="-2.2 1.42 -1" width="0.30" height="0.45" depth="0.30"
+    material="color:#b0a898; opacity:0.35; transparent:true"></a-box>
+  <a-text id="pht-irene" value="Lädt…" position="-2.2 1.85 -1" align="center"
+    color="#d4b96a" width="2" side="double"></a-text>
   <a-entity id="sc-irene"
     gltf-model="url(3d/Meshy_AI_irene_udlwig_0409173602_generate.glb)"
     position="-2.2 1.16 -1"
@@ -386,6 +401,11 @@ AFRAME.registerComponent('player-movement', {
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
   <a-box position=" 2.2 1.13 -1" width="0.58" height="0.06" depth="0.58"
     material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <!-- Platzhalter während des Ladens -->
+  <a-box id="ph-hitler" position=" 2.2 1.42 -1" width="0.30" height="0.45" depth="0.30"
+    material="color:#b0a898; opacity:0.35; transparent:true"></a-box>
+  <a-text id="pht-hitler" value="Lädt…" position=" 2.2 1.85 -1" align="center"
+    color="#d4b96a" width="2" side="double"></a-text>
   <a-entity id="sc-hitler"
     gltf-model="url(3d/Meshy_AI_AdolfHitler_0409172916_generate.glb)"
     position=" 2.2 1.16 -1"
@@ -459,6 +479,13 @@ AFRAME.registerComponent('player-movement', {
     if (!el) return;
 
     el.addEventListener('model-loaded', () => {
+      // Platzhalter entfernen
+      const suffix = id.replace('sc-', '');
+      const ph  = document.getElementById('ph-'  + suffix);
+      const pht = document.getElementById('pht-' + suffix);
+      if (ph)  ph.remove();
+      if (pht) pht.remove();
+
       // Welt-Matrix aktualisieren (berücksichtigt Position, Rotation, Scale)
       el.object3D.updateMatrixWorld(true);
 
