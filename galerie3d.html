@@ -28,9 +28,41 @@
       font: 12px/1.8 sans-serif;
       pointer-events: none; z-index: 100;
     }
+    #ladescreen {
+      position: fixed; inset: 0; z-index: 2000;
+      background: #1a1a1a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1.5rem;
+      transition: opacity 0.6s ease;
+    }
+    #ladescreen.fertig { opacity: 0; pointer-events: none; }
+    #ladescreen h2 {
+      color: #d4b96a; font: normal 1.6rem Georgia, serif;
+      letter-spacing: .2em; text-transform: uppercase;
+    }
+    #ladescreen p {
+      color: #8a7a5a; font: 0.85rem sans-serif;
+      letter-spacing: .1em;
+    }
+    .lade-balken-wrap {
+      width: 220px; height: 4px;
+      background: #3a3020; border-radius: 2px; overflow: hidden;
+    }
+    .lade-balken {
+      height: 100%; width: 0%;
+      background: #d4b96a; border-radius: 2px;
+      transition: width 0.3s ease;
+    }
   </style>
 </head>
 <body>
+
+<div id="ladescreen">
+  <h2>Kunstgalerie</h2>
+  <div class="lade-balken-wrap"><div class="lade-balken" id="lade-balken"></div></div>
+  <p id="lade-text">Skulpturen werden geladen…</p>
+</div>
 
 <div id="titel">Kunstgalerie</div>
 <div id="hint">
@@ -474,6 +506,12 @@ AFRAME.registerComponent('player-movement', {
     { id: 'sc-hitler',     px:  2.2, py: 1.16, pz: -1  },
   ];
 
+  let geladen = 0;
+  const gesamt = sculptures.length;
+  const balken = document.getElementById('lade-balken');
+  const ladeText = document.getElementById('lade-text');
+  const ladescreen = document.getElementById('ladescreen');
+
   sculptures.forEach(({ id, px, py, pz }) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -485,6 +523,16 @@ AFRAME.registerComponent('player-movement', {
       const pht = document.getElementById('pht-' + suffix);
       if (ph)  ph.remove();
       if (pht) pht.remove();
+
+      // Ladebalken updaten
+      geladen++;
+      balken.style.width = (geladen / gesamt * 100) + '%';
+      ladeText.textContent = geladen < gesamt
+        ? `Skulpturen werden geladen… (${geladen}/${gesamt})`
+        : 'Bereit!';
+      if (geladen === gesamt) {
+        setTimeout(() => ladescreen.classList.add('fertig'), 400);
+      }
 
       // Welt-Matrix aktualisieren (berücksichtigt Position, Rotation, Scale)
       el.object3D.updateMatrixWorld(true);
