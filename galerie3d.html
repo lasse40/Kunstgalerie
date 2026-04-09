@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kunstgalerie 3D</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { overflow: hidden; background: #111; }
+    #joystick-zone {
+      position: fixed; left: 0; bottom: 0;
+      width: 45vw; height: 45vh; z-index: 999;
+    }
+    #titel {
+      position: fixed; top: 0; left: 0; right: 0;
+      text-align: center; padding: 10px;
+      background: linear-gradient(rgba(0,0,0,.65), transparent);
+      color: #d4b96a; font: normal 18px/1 Georgia, serif;
+      letter-spacing: .2em; text-transform: uppercase;
+      pointer-events: none; z-index: 100;
+    }
+    #hint {
+      position: fixed; bottom: 10px; right: 10px;
+      background: rgba(0,0,0,.5); color: rgba(255,255,255,.75);
+      padding: 8px 12px; border-radius: 6px;
+      font: 12px/1.8 sans-serif;
+      pointer-events: none; z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div id="titel">Kunstgalerie</div>
+<div id="hint">
+  <span id="hint-mobile">&#x25CE; Joystick links &bull; Wischen rechts zum Schauen</span>
+  <span id="hint-desktop">WASD bewegen &bull; Maus ziehen zum Schauen</span>
+</div>
+<div id="joystick-zone"></div>
+
+<!-- ===== A-FRAME MOVEMENT COMPONENT (vor <a-scene> registrieren!) ===== -->
+<script>
+// ===== EIGENE TOUCH/MAUS-STEUERUNG (ersetzt look-controls) =====
+// Linke Hälfte: Joystick (nipplejs) · Rechte Hälfte: Schauen per Wischen
+// Beide gleichzeitig möglich (Multi-Touch).
+AFRAME.registerComponent('touch-look', {
+  init: function () {
+    this.yaw   = 0;   // Grad – horizontale Drehung
+    this.pitch = 0;   // Grad – vertikale Drehung
+
+    this.lookId  = null;  // Touch-ID der Schauen-Geste
+    this.lastX   = 0;
+    this.lastY   = 0;
+
+    this.mouseDown = false;
+    this.lastMX    = 0;
+    this.lastMY    = 0;
+
+    this._ts = (e) => {
+      if (this.lookId !== null) return;
+      for (const t of e.changedTouches) {
+        // Nur Touches auf der rechten Bildschirmhälfte (>45vw)
+        if (t.clientX > window.innerWidth * 0.45) {
+          this.lookId = t.identifier;
+          this.lastX  = t.clientX;
+          this.lastY  = t.clientY;
+          break;
+        }
+      }
+    };
+    this._tm = (e) => {
+      if (this.lookId === null) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier === this.lookId) {
+          this.yaw   -= (t.clientX - this.lastX) * 0.35;
+          this.pitch -= (t.clientY - this.lastY) * 0.35;
+          this.pitch  = Math.max(-80, Math.min(80, this.pitch));
+          this.lastX  = t.clientX;
+          this.lastY  = t.clientY;
+          break;
+        }
+      }
+    };
+    this._te = (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === this.lookId) { this.lookId = null; break; }
+      }
+    };
+    this._md = (e) => { this.mouseDown = true;  this.lastMX = e.clientX; this.lastMY = e.clientY; };
+    this._mm = (e) => {
+      if (!this.mouseDown) return;
+      this.yaw   -= (e.clientX - this.lastMX) * 0.3;
+      this.pitch -= (e.clientY - this.lastMY) * 0.3;
+      this.pitch  = Math.max(-80, Math.min(80, this.pitch));
+      this.lastMX = e.clientX;
+      this.lastMY = e.clientY;
+    };
+    this._mu = () => { this.mouseDown = false; };
+
+    window.addEventListener('touchstart', this._ts, { passive: true });
+    window.addEventListener('touchmove',  this._tm, { passive: true });
+    window.addEventListener('touchend',   this._te, { passive: true });
+    window.addEventListener('mousedown',  this._md);
+    window.addEventListener('mousemove',  this._mm);
+    window.addEventListener('mouseup',    this._mu);
+  },
+
+  remove: function () {
+    window.removeEventListener('touchstart', this._ts);
+    window.removeEventListener('touchmove',  this._tm);
+    window.removeEventListener('touchend',   this._te);
+    window.removeEventListener('mousedown',  this._md);
+    window.removeEventListener('mousemove',  this._mm);
+    window.removeEventListener('mouseup',    this._mu);
+  },
+
+  tick: function () {
+    this.el.object3D.rotation.order = 'YXZ';
+    this.el.object3D.rotation.y = THREE.MathUtils.degToRad(this.yaw);
+    this.el.object3D.rotation.x = THREE.MathUtils.degToRad(this.pitch);
+  }
+});
+
+// ===== SPIELER-BEWEGUNG =====
+AFRAME.registerComponent('player-movement', {
+  init: function () {
+    this.speed  = 2.5;   // m/s
+    this.joyX   = 0;
+    this.joyY   = 0;
+    this.keys   = {};
+    this.cam    = null;
+    this.fwd    = new THREE.Vector3();
+    this.right  = new THREE.Vector3();
+
+    // Kollisions-Boxen der Ausstellungsstücke (Sockel + Skulptur)
+    // cx/cz = Mittelpunkt, hw/hd = halbe Breite/Tiefe
+    this.obstacles = [
+      { cx: -2.2, cz: -4,  hw: 0.65, hd: 0.65 },  // Prometheus + Sockel
+      { cx:  2.2, cz: -4,  hw: 0.45, hd: 0.45 },  // Ludwig + Sockel
+      { cx: -2.2, cz: -1,  hw: 0.45, hd: 0.45 },  // Irene Ludwig + Sockel
+      { cx:  2.2, cz: -1,  hw: 0.45, hd: 0.45 },  // Hitler + Sockel
+    ];
+
+    this._kd = (e) => { this.keys[e.code] = true; };
+    this._ku = (e) => { this.keys[e.code] = false; };
+    window.addEventListener('keydown', this._kd);
+    window.addEventListener('keyup',   this._ku);
+  },
+
+  remove: function () {
+    window.removeEventListener('keydown', this._kd);
+    window.removeEventListener('keyup',   this._ku);
+  },
+
+  // Prüft ob Position (x, z) mit einem Ausstellungsstück kollidiert
+  collides: function (x, z) {
+    const R = 0.32; // Spieler-Radius
+    for (const o of this.obstacles) {
+      if (x > o.cx - o.hw - R && x < o.cx + o.hw + R &&
+          z > o.cz - o.hd - R && z < o.cz + o.hd + R) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  tick: function (time, delta) {
+    if (!this.cam) {
+      this.cam = this.el.querySelector('[camera]');
+      if (!this.cam) return;
+    }
+
+    const sec = Math.min(delta / 1000, 0.05);
+
+    let fx = this.joyX;
+    let fy = this.joyY;
+    if (this.keys['KeyW'] || this.keys['ArrowUp'])    fy = Math.max(fy,  1);
+    if (this.keys['KeyS'] || this.keys['ArrowDown'])  fy = Math.min(fy, -1);
+    if (this.keys['KeyD'] || this.keys['ArrowRight']) fx = Math.max(fx,  1);
+    if (this.keys['KeyA'] || this.keys['ArrowLeft'])  fx = Math.min(fx, -1);
+    if (fx === 0 && fy === 0) return;
+
+    // Kamera-Richtung aus touch-look
+    const tl = this.cam.components && this.cam.components['touch-look'];
+    const yaw = tl ? THREE.MathUtils.degToRad(tl.yaw) : this.cam.object3D.rotation.y;
+    this.fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+    this.right.set( Math.cos(yaw), 0, -Math.sin(yaw));
+
+    const p   = this.el.object3D.position;
+    const dx  = (this.right.x * fx + this.fwd.x * fy) * this.speed * sec;
+    const dz  = (this.right.z * fx + this.fwd.z * fy) * this.speed * sec;
+
+    // Raumgrenzen-Clamp-Helfer
+    const cx = x => Math.max(-4.5, Math.min( 4.5, x));
+    const cz = z => Math.max(-6.4, Math.min( 6.4, z));
+
+    const nx = cx(p.x + dx);
+    const nz = cz(p.z + dz);
+
+    if (!this.collides(nx, nz)) {
+      // Kein Hindernis → frei bewegen
+      p.x = nx;
+      p.z = nz;
+    } else if (!this.collides(nx, p.z)) {
+      // Nur X-Bewegung möglich (entlang Hindernis gleiten)
+      p.x = nx;
+    } else if (!this.collides(p.x, nz)) {
+      // Nur Z-Bewegung möglich (entlang Hindernis gleiten)
+      p.z = nz;
+    }
+    // sonst: komplett blockiert, keine Bewegung
+  }
+});
+</script>
+
+<a-scene
+  renderer="antialias: true; colorManagement: true"
+  background="color: #111111"
+  loading-screen="dotsColor: #d4b96a; backgroundColor: #1a1a1a"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+>
+
+  <!-- ===== ASSETS ===== -->
+  <a-assets timeout="60000">
+    <img id="img-battleship" src="img/Konig-class_battleship_at_Jutland,_Claus_Bergen.jpg">
+    <img id="img-breker"     src="img/Arno_Breker(1).jpg">
+    <img id="img-horse"      src="img/Arno_Breker_Man_met_Paard_(1982)(1).jpg">
+    <img id="img-s1"  src="img/signal-2026-04-09-203018.jpeg">
+    <img id="img-s2"  src="img/signal-2026-04-09-203018_002.jpeg">
+    <img id="img-s3"  src="img/signal-2026-04-09-203018_003.jpeg">
+    <img id="img-s4"  src="img/signal-2026-04-09-203018_004.jpeg">
+    <img id="img-s5"  src="img/signal-2026-04-09-203018_005.jpeg">
+    <img id="img-s6"  src="img/signal-2026-04-09-203018_006.jpeg">
+  </a-assets>
+
+  <!-- ===== BELEUCHTUNG ===== -->
+  <a-light type="ambient"    color="#fffaf0" intensity="0.45"></a-light>
+  <a-light type="hemisphere" sky-color="#fffaf0" ground-color="#3d2b1f" intensity="0.55"></a-light>
+  <!-- Nordwand -->
+  <a-light type="point" position=" 0   3.3 -6.5" color="#fff8e0" intensity="2.0" distance="5"></a-light>
+  <a-light type="point" position="-3.3 3.3 -6.5" color="#fff8e0" intensity="1.5" distance="4"></a-light>
+  <a-light type="point" position=" 3.3 3.3 -6.5" color="#fff8e0" intensity="1.5" distance="4"></a-light>
+  <!-- Westwand -->
+  <a-light type="point" position="-4.8 3.3 -3.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <a-light type="point" position="-4.8 3.3 -0.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <a-light type="point" position="-4.8 3.3  2.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <!-- Ostwand -->
+  <a-light type="point" position=" 4.8 3.3 -3.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <a-light type="point" position=" 4.8 3.3 -0.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <a-light type="point" position=" 4.8 3.3  2.5" color="#fff8e0" intensity="1.2" distance="3.5"></a-light>
+  <!-- Skulpturen -->
+  <a-light type="point" position="-2.2 3.3 -4" color="#fffaf0" intensity="2.0" distance="5"></a-light>
+  <a-light type="point" position=" 2.2 3.3 -4" color="#fffaf0" intensity="2.0" distance="5"></a-light>
+  <a-light type="point" position="-2.2 3.3 -1" color="#fffaf0" intensity="1.8" distance="4"></a-light>
+  <a-light type="point" position=" 2.2 3.3 -1" color="#fffaf0" intensity="1.8" distance="4"></a-light>
+
+  <!-- ===== RAUM  (10m breit · 14m tief · 3.5m hoch) ===== -->
+  <!-- Boden -->
+  <a-plane position="0 0 0"   rotation="-90 0 0" width="10" height="14"
+    material="color:#2c1f14; roughness:1; metalness:0"></a-plane>
+  <!-- Decke -->
+  <a-plane position="0 3.5 0" rotation=" 90 0 0" width="10" height="14"
+    material="color:#f0ede6; roughness:1; metalness:0"></a-plane>
+  <!-- Nordwand  z=-7 -->
+  <a-box position=" 0    1.75 -7" width="10"   height="3.5" depth="0.12"
+    material="color:#e8e4d8; roughness:1"></a-box>
+  <!-- Südwand   z= 7 -->
+  <a-box position=" 0    1.75  7" width="10"   height="3.5" depth="0.12"
+    material="color:#e8e4d8; roughness:1"></a-box>
+  <!-- Westwand  x=-5 -->
+  <a-box position="-5    1.75  0" width="0.12" height="3.5" depth="14"
+    material="color:#e5e1d5; roughness:1"></a-box>
+  <!-- Ostwand   x= 5 -->
+  <a-box position=" 5    1.75  0" width="0.12" height="3.5" depth="14"
+    material="color:#e5e1d5; roughness:1"></a-box>
+  <!-- Sockelleisten -->
+  <a-box position=" 0    0.06 -6.93" width="10"   height="0.12" depth="0.06" material="color:#c8bfa8"></a-box>
+  <a-box position=" 0    0.06  6.93" width="10"   height="0.12" depth="0.06" material="color:#c8bfa8"></a-box>
+  <a-box position="-4.93 0.06  0"    width="0.06" height="0.12" depth="14"   material="color:#c8bfa8"></a-box>
+  <a-box position=" 4.93 0.06  0"    width="0.06" height="0.12" depth="14"   material="color:#c8bfa8"></a-box>
+
+  <!-- ===== NORDWAND – GEMÄLDE ===== -->
+  <!-- Wandinnenfläche bei z=-6.94 · Rahmen bei z=-6.91 · Bild bei z=-6.87 -->
+
+  <!-- König-Klasse Schlachtschiff  3334×2188 → ratio 1.524 → w=2.90 h=1.90 -->
+  <a-box  position=" 0   2.10 -6.91" width="3.10" height="2.10" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
+  <a-box  position=" 0   2.10 -6.88" width="2.96" height="1.96" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
+  <a-image src="#img-battleship"      position=" 0   2.10 -6.87" width="2.90" height="1.90"></a-image>
+
+  <!-- Arno Breker Porträt  500×500 → ratio 1.00 → w=1.60 h=1.60 -->
+  <a-box  position="-3.4  2.00 -6.91" width="1.80" height="1.80" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
+  <a-box  position="-3.4  2.00 -6.88" width="1.66" height="1.66" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
+  <a-image src="#img-breker"           position="-3.4  2.00 -6.87" width="1.60" height="1.60"></a-image>
+
+  <!-- Mann mit Pferd  450×668 → ratio 0.674 → w=1.28 h=1.90 -->
+  <a-box  position=" 3.4  2.05 -6.91" width="1.48" height="2.10" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
+  <a-box  position=" 3.4  2.05 -6.88" width="1.34" height="1.96" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
+  <a-image src="#img-horse"            position=" 3.4  2.05 -6.87" width="1.28" height="1.90"></a-image>
+
+  <!-- ===== WESTWAND – 3 BILDER (Bilder zeigen nach Osten, rotation 0 90 0) ===== -->
+  <!-- Wandinnenfläche bei x=-4.94 · Rahmen bei x=-4.91 · Bild bei x=-4.87 -->
+
+  <!-- signal-1  531×376  ratio 1.412 → w=2.12 h=1.50 -->
+  <a-box position="-4.91 2.0 -3.5" width="0.04" height="1.70" depth="2.32"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s1" position="-4.87 2.0 -3.5" rotation="0 90 0" width="2.12" height="1.50"></a-image>
+
+  <!-- signal-5  500×703  ratio 0.711 → w=1.07 h=1.50 -->
+  <a-box position="-4.91 2.0 -0.5" width="0.04" height="1.70" depth="1.27"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s5" position="-4.87 2.0 -0.5" rotation="0 90 0" width="1.07" height="1.50"></a-image>
+
+  <!-- signal-6  478×398  ratio 1.201 → w=1.80 h=1.50 -->
+  <a-box position="-4.91 2.0  2.5" width="0.04" height="1.70" depth="2.00"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s6" position="-4.87 2.0  2.5" rotation="0 90 0" width="1.80" height="1.50"></a-image>
+
+  <!-- ===== OSTWAND – 3 BILDER (Bilder zeigen nach Westen, rotation 0 -90 0) ===== -->
+  <!-- Wandinnenfläche bei x=4.94 · Rahmen bei x=4.91 · Bild bei x=4.87 -->
+
+  <!-- signal-2  273×400  ratio 0.682 → w=1.02 h=1.50 -->
+  <a-box position="4.91 2.0 -3.5" width="0.04" height="1.70" depth="1.22"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s2" position="4.87 2.0 -3.5" rotation="0 -90 0" width="1.02" height="1.50"></a-image>
+
+  <!-- signal-3  600×455  ratio 1.319 → w=1.98 h=1.50 -->
+  <a-box position="4.91 2.0 -0.5" width="0.04" height="1.70" depth="2.18"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s3" position="4.87 2.0 -0.5" rotation="0 -90 0" width="1.98" height="1.50"></a-image>
+
+  <!-- signal-4  446×600  ratio 0.743 → w=1.11 h=1.50 -->
+  <a-box position="4.91 2.0  2.5" width="0.04" height="1.70" depth="1.31"
+    material="color:#1a110a; roughness:0.7"></a-box>
+  <a-image src="#img-s4" position="4.87 2.0  2.5" rotation="0 -90 0" width="1.11" height="1.50"></a-image>
+
+  <!-- ===== SKULPTUREN + SOCKEL =====
+
+    SOCKEL-SCHEMA:
+    - Vollkörper-Figur: flache Plattform (0.9×0.12×0.9) → Figur steht auf dem Boden
+    - Büsten/Köpfe: Säule (0.45×1.1×0.45) + Abschlussplatte (0.55×0.06×0.55)
+      Büste sitzt auf y=1.16 → Kopfmitte ca. y=1.3-1.4 = etwas unter Augenhöhe (1.6m) ✓
+
+    SCALE-ANPASSUNG:
+    - Prometheus (Vollkörper, scale 1 1 1): falls Figur zu groß/klein → z.B. scale="0.5 0.5 0.5"
+    - Büsten (scale 0.3 0.3 0.3): falls Kopf zu groß/klein → scale anpassen
+  -->
+
+  <!-- PROMETHEUS (Vollkörper) – hinten links -->
+  <a-box position="-2.2 0.06 -4" width="0.90" height="0.12" depth="0.90"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-entity id="sc-prometheus"
+    gltf-model="url(3d/Meshy_AI_prometheus_0409172841_generate.glb)"
+    position="-2.2 0.12 -4"
+    scale="1 1 1"
+    rotation="0 25 0"
+  ></a-entity>
+
+  <!-- LUDWIG (Büste) – hinten rechts -->
+  <a-box position=" 2.2 0.55 -4" width="0.45" height="1.10" depth="0.45"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-box position=" 2.2 1.13 -4" width="0.58" height="0.06" depth="0.58"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-entity id="sc-ludwig"
+    gltf-model="url(3d/Meshy_AI_Ludwig_0409172157_generate.glb)"
+    position=" 2.2 1.16 -4"
+    scale="0.3 0.3 0.3"
+    rotation="0 -20 0"
+  ></a-entity>
+
+  <!-- IRENE LUDWIG (Büste) – mitte links -->
+  <a-box position="-2.2 0.55 -1" width="0.45" height="1.10" depth="0.45"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-box position="-2.2 1.13 -1" width="0.58" height="0.06" depth="0.58"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-entity id="sc-irene"
+    gltf-model="url(3d/Meshy_AI_irene_udlwig_0409173602_generate.glb)"
+    position="-2.2 1.16 -1"
+    scale="0.3 0.3 0.3"
+    rotation="0 35 0"
+  ></a-entity>
+
+  <!-- ADOLF HITLER (Büste, historisch) – mitte rechts -->
+  <a-box position=" 2.2 0.55 -1" width="0.45" height="1.10" depth="0.45"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-box position=" 2.2 1.13 -1" width="0.58" height="0.06" depth="0.58"
+    material="color:#f2f2f2; roughness:0.6; metalness:0"></a-box>
+  <a-entity id="sc-hitler"
+    gltf-model="url(3d/Meshy_AI_AdolfHitler_0409172916_generate.glb)"
+    position=" 2.2 1.16 -1"
+    scale="0.3 0.3 0.3"
+    rotation="0 -35 0"
+  ></a-entity>
+
+  <!-- ===== KAMERA-RIG =====
+    Rig auf Bodenhöhe (y=0) – wird vom player-movement-Komponent bewegt.
+    Kamera auf Augenhöhe eines 1,80m Menschen (y=1.60) innerhalb des Rigs.
+    Startposition: Eingang (Südseite), schaut nach Norden.
+  -->
+  <a-entity id="rig" position="0 0 5.5" player-movement>
+    <a-camera id="cam"
+      position="0 1.60 0"
+      look-controls="enabled: false"
+      touch-look
+      wasd-controls="enabled: false"
+      near="0.05"
+      far="30"
+    ></a-camera>
+  </a-entity>
+
+</a-scene>
+
+<script>
+  // ===== JOYSTICK =====
+  const rig = document.getElementById('rig');
+
+  const joystick = nipplejs.create({
+    zone:        document.getElementById('joystick-zone'),
+    mode:        'dynamic',
+    color:       'rgba(212,185,106,0.7)',
+    size:        90,
+    restOpacity: 0.4,
+  });
+
+  joystick.on('move', (_, data) => {
+    const comp = rig.components && rig.components['player-movement'];
+    if (!comp) return;
+    const a = data.angle.radian;
+    const f = Math.min(data.force, 1);
+    comp.joyX =  Math.cos(a) * f;
+    comp.joyY =  Math.sin(a) * f;
+  });
+
+  joystick.on('end', () => {
+    const comp = rig.components && rig.components['player-movement'];
+    if (comp) { comp.joyX = 0; comp.joyY = 0; }
+  });
+
+  // Desktop vs. Mobile Hint
+  if (!('ontouchstart' in window)) {
+    document.getElementById('hint-mobile').style.display  = 'none';
+  } else {
+    document.getElementById('hint-desktop').style.display = 'none';
+  }
+
+  // ===== SKULPTUREN AUTOMATISCH AUF SOCKELN ZENTRIEREN =====
+  // Berechnet die tatsächliche Bounding Box jedes geladenen Modells und
+  // verschiebt es so, dass es exakt mittig auf seinem Sockel steht.
+  const sculptures = [
+    { id: 'sc-prometheus', px: -2.2, py: 0.12, pz: -4  },
+    { id: 'sc-ludwig',     px:  2.2, py: 1.16, pz: -4  },
+    { id: 'sc-irene',      px: -2.2, py: 1.16, pz: -1  },
+    { id: 'sc-hitler',     px:  2.2, py: 1.16, pz: -1  },
+  ];
+
+  sculptures.forEach(({ id, px, py, pz }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('model-loaded', () => {
+      // Welt-Matrix aktualisieren (berücksichtigt Position, Rotation, Scale)
+      el.object3D.updateMatrixWorld(true);
+
+      const box = new THREE.Box3().setFromObject(el.object3D);
+      if (box.isEmpty()) return;
+
+      const center = box.getCenter(new THREE.Vector3());
+
+      // Verschiebung: Modell-Mitte → Sockel-Mitte (X, Z)
+      //              Modell-Boden → Sockel-Oberkante (Y)
+      el.object3D.position.x += px - center.x;
+      el.object3D.position.z += pz - center.z;
+      el.object3D.position.y += py - box.min.y;
+    });
+  });
+</script>
+
+</body>
+</html>

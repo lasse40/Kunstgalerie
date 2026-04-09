@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digitale Kunstgalerie</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>Kunstgalerie</h1>
+    <p class="subtitle">Eine digitale Ausstellung</p>
+  </header>
+
+  <main>
+
+    <section class="section-title">
+      <h2>Gemälde &amp; Fotografien</h2>
+    </section>
+
+    <div class="gallery-grid">
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/Konig-class_battleship_at_Jutland,_Claus_Bergen.jpg" alt="König-Klasse Schlachtschiff bei Skagerrak" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>König-Klasse bei Skagerrak</h3>
+          <p class="artist">Claus Bergen</p>
+          <p class="desc">Gemälde der Seeschlacht am Skagerrak (Jütland), einem der größten Seegefechte des Ersten Weltkriegs.</p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/Arno_Breker(1).jpg" alt="Arno Breker" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Arno Breker</h3>
+          <p class="artist">Porträt</p>
+          <p class="desc">Arno Breker (1900–1991) war ein deutscher Bildhauer, bekannt für seine monumentalen Skulpturen im Stil des Neoklassizismus.</p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/Arno_Breker_Man_met_Paard_(1982)(1).jpg" alt="Mann mit Pferd – Arno Breker" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Mann mit Pferd</h3>
+          <p class="artist">Arno Breker, 1982</p>
+          <p class="desc">Skulptur von Arno Breker aus dem Jahr 1982. Ein klassisches Motiv in seiner charakteristischen Formensprache.</p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018.jpeg" alt="Ausstellungsstück 1" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück I</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018_002.jpeg" alt="Ausstellungsstück 2" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück II</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018_003.jpeg" alt="Ausstellungsstück 3" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück III</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018_004.jpeg" alt="Ausstellungsstück 4" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück IV</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018_005.jpeg" alt="Ausstellungsstück 5" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück V</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card" onclick="openModal(this)">
+        <div class="artwork-img-wrap">
+          <img src="img/signal-2026-04-09-203018_006.jpeg" alt="Ausstellungsstück 6" loading="lazy" />
+        </div>
+        <div class="artwork-info">
+          <h3>Ausstellungsstück VI</h3>
+          <p class="artist">Unbekannt</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+    </div>
+
+    <section class="section-title">
+      <h2>3D-Skulpturen</h2>
+      <p class="section-desc">Interaktiv: Tippe und ziehe, um die Skulpturen zu drehen.</p>
+    </section>
+
+    <div class="gallery-grid">
+
+      <div class="artwork-card model-card">
+        <div class="artwork-img-wrap model-wrap">
+          <model-viewer
+            src="3d/Meshy_AI_prometheus_0409172841_generate.glb"
+            alt="Prometheus"
+            auto-rotate
+            camera-controls
+            touch-action="pan-y"
+            shadow-intensity="1"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+          ></model-viewer>
+        </div>
+        <div class="artwork-info">
+          <h3>Prometheus</h3>
+          <p class="artist">3D-Skulptur</p>
+          <p class="desc">Prometheus – der Titan aus der griechischen Mythologie, der den Menschen das Feuer brachte. Ein Symbol für Erkenntnis und Opfer.</p>
+        </div>
+      </div>
+
+      <div class="artwork-card model-card">
+        <div class="artwork-img-wrap model-wrap">
+          <model-viewer
+            src="3d/Meshy_AI_Ludwig_0409172157_generate.glb"
+            alt="Ludwig"
+            auto-rotate
+            camera-controls
+            touch-action="pan-y"
+            shadow-intensity="1"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+          ></model-viewer>
+        </div>
+        <div class="artwork-info">
+          <h3>Ludwig</h3>
+          <p class="artist">3D-Skulptur</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card model-card">
+        <div class="artwork-img-wrap model-wrap">
+          <model-viewer
+            src="3d/Meshy_AI_irene_udlwig_0409173602_generate.glb"
+            alt="Irene Ludwig"
+            auto-rotate
+            camera-controls
+            touch-action="pan-y"
+            shadow-intensity="1"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+          ></model-viewer>
+        </div>
+        <div class="artwork-info">
+          <h3>Irene Ludwig</h3>
+          <p class="artist">3D-Skulptur</p>
+          <p class="desc"></p>
+        </div>
+      </div>
+
+      <div class="artwork-card model-card">
+        <div class="artwork-img-wrap model-wrap">
+          <model-viewer
+            src="3d/Meshy_AI_AdolfHitler_0409172916_generate.glb"
+            alt="Adolf Hitler"
+            auto-rotate
+            camera-controls
+            touch-action="pan-y"
+            shadow-intensity="1"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+          ></model-viewer>
+        </div>
+        <div class="artwork-info">
+          <h3>Adolf Hitler</h3>
+          <p class="artist">3D-Skulptur (historisch)</p>
+          <p class="desc">Historische Darstellung zu Zwecken der Bildung und Auseinandersetzung mit der Geschichte des Dritten Reichs.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <p>Schulprojekt &mdash; Digitale Kunstgalerie &mdash; 2026</p>
+  </footer>
+
+  <!-- Modal für Bildvergrößerung -->
+  <div id="modal" class="modal" onclick="closeModal()">
+    <div class="modal-inner" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <img id="modal-img" src="" alt="" />
+      <div class="modal-info">
+        <h3 id="modal-title"></h3>
+        <p id="modal-artist"></p>
+        <p id="modal-desc"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="gallery.js"></script>
+</body>
+</html>
