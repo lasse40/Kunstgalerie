@@ -520,13 +520,6 @@ AFRAME.registerComponent('player-movement', {
       near="0.05"
       far="30"
     >
-      <a-entity
-        cursor="fuse: false"
-        raycaster="objects: .klickbar; far: 10"
-        geometry="primitive: ring; radiusInner: 0.004; radiusOuter: 0.008"
-        material="color: #d4b96a; shader: flat; opacity: 0.7"
-        position="0 0 -0.5"
-      ></a-entity>
     </a-camera>
   </a-entity>
 
@@ -689,23 +682,48 @@ AFRAME.registerComponent('player-movement', {
     panel.classList.add('offen');
   }
 
-  // Klick-Events auf alle klickbaren Elemente
-  document.querySelectorAll('.klickbar').forEach(el => {
-    el.addEventListener('click', (evt) => {
-      const key = el.getAttribute('data-info') ||
-                  evt.target.getAttribute('data-info');
-      if (key) zeigeInfo(key);
-    });
-  });
+  // Maus-Raycasting für direkte Mauszeiger-Interaktion
+  const sceneEl = document.querySelector('a-scene');
+  const threeRay = new THREE.Raycaster();
+  const mouse2d  = new THREE.Vector2();
 
-  // Hint anzeigen wenn Cursor über klickbares Objekt
-  document.querySelectorAll('.klickbar').forEach(el => {
-    el.addEventListener('mouseenter', () => {
-      klickHint.classList.add('sichtbar');
-      clearTimeout(hintTimer);
+  function raycastMouse(clientX, clientY) {
+    const canvas = sceneEl.canvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    mouse2d.x = ((clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse2d.y = ((clientY - rect.top)  / rect.height) * -2 + 1;
+    const camObj = document.getElementById('cam').getObject3D('camera');
+    if (!camObj) return null;
+    threeRay.setFromCamera(mouse2d, camObj);
+
+    const meshes = [];
+    document.querySelectorAll('.klickbar').forEach(el => {
+      el.object3D && el.object3D.traverse(obj => {
+        if (obj.isMesh) meshes.push({ mesh: obj, el });
+      });
     });
-    el.addEventListener('mouseleave', () => {
-      hintTimer = setTimeout(() => klickHint.classList.remove('sichtbar'), 300);
+    const hits = threeRay.intersectObjects(meshes.map(m => m.mesh), false);
+    if (!hits.length) return null;
+    const found = meshes.find(m => m.mesh === hits[0].object);
+    return found ? found.el : null;
+  }
+
+  sceneEl.addEventListener('loaded', () => {
+    const canvas = sceneEl.canvas;
+    canvas.addEventListener('click', (e) => {
+      const el = raycastMouse(e.clientX, e.clientY);
+      if (el) zeigeInfo(el.dataset.info);
+    });
+    canvas.addEventListener('mousemove', (e) => {
+      const el = raycastMouse(e.clientX, e.clientY);
+      canvas.style.cursor = el ? 'pointer' : 'default';
+      if (el) {
+        klickHint.classList.add('sichtbar');
+        clearTimeout(hintTimer);
+      } else {
+        hintTimer = setTimeout(() => klickHint.classList.remove('sichtbar'), 200);
+      }
     });
   });
 
