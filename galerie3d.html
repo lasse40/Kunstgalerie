@@ -28,6 +28,47 @@
       font: 12px/1.8 sans-serif;
       pointer-events: none; z-index: 100;
     }
+    #info-panel {
+      position: fixed; top: 50%; right: -360px;
+      transform: translateY(-50%);
+      width: 320px; max-height: 80vh;
+      background: rgba(15,11,7,0.95);
+      border-left: 2px solid #d4b96a;
+      color: #e8e4d8; padding: 24px 20px;
+      z-index: 600; overflow-y: auto;
+      transition: right 0.35s ease;
+      font-family: Georgia, serif;
+    }
+    #info-panel.offen { right: 0; }
+    #info-close {
+      position: absolute; top: 10px; right: 12px;
+      background: none; border: none;
+      color: #d4b96a; font-size: 20px;
+      cursor: pointer; line-height: 1;
+    }
+    #info-panel h3 {
+      color: #d4b96a; font-size: 1rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    #info-panel p {
+      font-size: 0.82rem; line-height: 1.7;
+      color: #c8c0ae;
+    }
+    #info-img {
+      width: 100%; border-radius: 3px;
+      margin-bottom: 14px; display: none;
+    }
+    #klick-hint {
+      position: fixed; bottom: 52px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.55); color: rgba(255,255,255,.8);
+      padding: 5px 14px; border-radius: 20px;
+      font: 11px sans-serif; pointer-events: none;
+      z-index: 100; opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #klick-hint.sichtbar { opacity: 1; }
     #ladescreen {
       position: fixed; inset: 0; z-index: 2000;
       background: #1a1a1a;
@@ -70,6 +111,14 @@
   <span id="hint-desktop">WASD bewegen &bull; Maus ziehen zum Schauen</span>
 </div>
 <div id="joystick-zone"></div>
+
+<div id="info-panel">
+  <button id="info-close">✕</button>
+  <img id="info-img" alt="">
+  <h3 id="info-titel"></h3>
+  <p id="info-text"></p>
+</div>
+<div id="klick-hint">Klicken für Info</div>
 
 <!-- ===== A-FRAME MOVEMENT COMPONENT (vor <a-scene> registrieren!) ===== -->
 <script>
@@ -319,17 +368,17 @@ AFRAME.registerComponent('player-movement', {
   <!-- König-Klasse Schlachtschiff  3334×2188 → ratio 1.524 → w=2.90 h=1.90 -->
   <a-box  position=" 0   2.10 -6.91" width="3.10" height="2.10" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
   <a-box  position=" 0   2.10 -6.88" width="2.96" height="1.96" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
-  <a-image src="#img-battleship"      position=" 0   2.10 -6.87" width="2.90" height="1.90"></a-image>
+  <a-image src="#img-battleship"      position=" 0   2.10 -6.87" width="2.90" height="1.90" class="klickbar" data-info="battleship"></a-image>
 
   <!-- Arno Breker Porträt  500×500 → ratio 1.00 → w=1.60 h=1.60 -->
   <a-box  position="-3.4  2.00 -6.91" width="1.80" height="1.80" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
   <a-box  position="-3.4  2.00 -6.88" width="1.66" height="1.66" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
-  <a-image src="#img-breker"           position="-3.4  2.00 -6.87" width="1.60" height="1.60"></a-image>
+  <a-image src="#img-breker"           position="-3.4  2.00 -6.87" width="1.60" height="1.60" class="klickbar" data-info="breker-portrait"></a-image>
 
   <!-- Mann mit Pferd  450×668 → ratio 0.674 → w=1.28 h=1.90 -->
   <a-box  position=" 3.4  2.05 -6.91" width="1.48" height="2.10" depth="0.04" material="color:#1a110a; roughness:0.7"></a-box>
   <a-box  position=" 3.4  2.05 -6.88" width="1.34" height="1.96" depth="0.01" material="color:#f0ece2; roughness:1"></a-box>
-  <a-image src="#img-horse"            position=" 3.4  2.05 -6.87" width="1.28" height="1.90"></a-image>
+  <a-image src="#img-horse"            position=" 3.4  2.05 -6.87" width="1.28" height="1.90" class="klickbar" data-info="breker-pferd"></a-image>
 
   <!-- ===== WESTWAND – 3 BILDER (Bilder zeigen nach Osten, rotation 0 90 0) ===== -->
   <!-- Wandinnenfläche bei x=-4.94 · Rahmen bei x=-4.91 · Bild bei x=-4.87 -->
@@ -337,17 +386,17 @@ AFRAME.registerComponent('player-movement', {
   <!-- signal-1  531×376  ratio 1.412 → w=2.12 h=1.50 -->
   <a-box position="-4.91 2.0 -3.5" width="0.04" height="1.70" depth="2.32"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s1" position="-4.87 2.0 -3.5" rotation="0 90 0" width="2.12" height="1.50"></a-image>
+  <a-image src="#img-s1" position="-4.87 2.0 -3.5" rotation="0 90 0" width="2.12" height="1.50" class="klickbar" data-info="signal-1"></a-image>
 
   <!-- signal-5  500×703  ratio 0.711 → w=1.07 h=1.50 -->
   <a-box position="-4.91 2.0 -0.5" width="0.04" height="1.70" depth="1.27"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s5" position="-4.87 2.0 -0.5" rotation="0 90 0" width="1.07" height="1.50"></a-image>
+  <a-image src="#img-s5" position="-4.87 2.0 -0.5" rotation="0 90 0" width="1.07" height="1.50" class="klickbar" data-info="signal-5"></a-image>
 
   <!-- signal-6  478×398  ratio 1.201 → w=1.80 h=1.50 -->
   <a-box position="-4.91 2.0  2.5" width="0.04" height="1.70" depth="2.00"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s6" position="-4.87 2.0  2.5" rotation="0 90 0" width="1.80" height="1.50"></a-image>
+  <a-image src="#img-s6" position="-4.87 2.0  2.5" rotation="0 90 0" width="1.80" height="1.50" class="klickbar" data-info="signal-6"></a-image>
 
   <!-- ===== OSTWAND – 3 BILDER (Bilder zeigen nach Westen, rotation 0 -90 0) ===== -->
   <!-- Wandinnenfläche bei x=4.94 · Rahmen bei x=4.91 · Bild bei x=4.87 -->
@@ -355,17 +404,17 @@ AFRAME.registerComponent('player-movement', {
   <!-- signal-2  273×400  ratio 0.682 → w=1.02 h=1.50 -->
   <a-box position="4.91 2.0 -3.5" width="0.04" height="1.70" depth="1.22"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s2" position="4.87 2.0 -3.5" rotation="0 -90 0" width="1.02" height="1.50"></a-image>
+  <a-image src="#img-s2" position="4.87 2.0 -3.5" rotation="0 -90 0" width="1.02" height="1.50" class="klickbar" data-info="signal-2"></a-image>
 
   <!-- signal-3  600×455  ratio 1.319 → w=1.98 h=1.50 -->
   <a-box position="4.91 2.0 -0.5" width="0.04" height="1.70" depth="2.18"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s3" position="4.87 2.0 -0.5" rotation="0 -90 0" width="1.98" height="1.50"></a-image>
+  <a-image src="#img-s3" position="4.87 2.0 -0.5" rotation="0 -90 0" width="1.98" height="1.50" class="klickbar" data-info="signal-3"></a-image>
 
   <!-- signal-4  446×600  ratio 0.743 → w=1.11 h=1.50 -->
   <a-box position="4.91 2.0  2.5" width="0.04" height="1.70" depth="1.31"
     material="color:#1a110a; roughness:0.7"></a-box>
-  <a-image src="#img-s4" position="4.87 2.0  2.5" rotation="0 -90 0" width="1.11" height="1.50"></a-image>
+  <a-image src="#img-s4" position="4.87 2.0  2.5" rotation="0 -90 0" width="1.11" height="1.50" class="klickbar" data-info="signal-4"></a-image>
 
   <!-- ===== SKULPTUREN + SOCKEL =====
 
@@ -393,6 +442,9 @@ AFRAME.registerComponent('player-movement', {
     scale="1 1 1"
     rotation="0 25 0"
   ></a-entity>
+  <a-box position="-2.2 1.0 -4" width="0.7" height="2.0" depth="0.7"
+    material="opacity:0; transparent:true; side:double"
+    class="klickbar" data-info="prometheus"></a-box>
 
   <!-- LUDWIG (Büste) – hinten rechts -->
   <a-box position=" 2.2 0.55 -4" width="0.45" height="1.10" depth="0.45"
@@ -410,6 +462,9 @@ AFRAME.registerComponent('player-movement', {
     scale="0.3 0.3 0.3"
     rotation="0 -20 0"
   ></a-entity>
+  <a-box position=" 2.2 1.42 -4" width="0.5" height="0.6" depth="0.5"
+    material="opacity:0; transparent:true; side:double"
+    class="klickbar" data-info="ludwig"></a-box>
 
   <!-- IRENE LUDWIG (Büste) – mitte links -->
   <a-box position="-2.2 0.55 -1" width="0.45" height="1.10" depth="0.45"
@@ -427,6 +482,9 @@ AFRAME.registerComponent('player-movement', {
     scale="0.3 0.3 0.3"
     rotation="0 35 0"
   ></a-entity>
+  <a-box position="-2.2 1.42 -1" width="0.5" height="0.6" depth="0.5"
+    material="opacity:0; transparent:true; side:double"
+    class="klickbar" data-info="irene"></a-box>
 
   <!-- ADOLF HITLER (Büste, historisch) – mitte rechts -->
   <a-box position=" 2.2 0.55 -1" width="0.45" height="1.10" depth="0.45"
@@ -444,6 +502,9 @@ AFRAME.registerComponent('player-movement', {
     scale="0.3 0.3 0.3"
     rotation="0 -35 0"
   ></a-entity>
+  <a-box position=" 2.2 1.42 -1" width="0.5" height="0.6" depth="0.5"
+    material="opacity:0; transparent:true; side:double"
+    class="klickbar" data-info="hitler"></a-box>
 
   <!-- ===== KAMERA-RIG =====
     Rig auf Bodenhöhe (y=0) – wird vom player-movement-Komponent bewegt.
@@ -458,7 +519,15 @@ AFRAME.registerComponent('player-movement', {
       wasd-controls="enabled: false"
       near="0.05"
       far="30"
-    ></a-camera>
+    >
+      <a-entity
+        cursor="fuse: false"
+        raycaster="objects: .klickbar; far: 10"
+        geometry="primitive: ring; radiusInner: 0.004; radiusOuter: 0.008"
+        material="color: #d4b96a; shader: flat; opacity: 0.7"
+        position="0 0 -0.5"
+      ></a-entity>
+    </a-camera>
   </a-entity>
 
 </a-scene>
@@ -547,6 +616,96 @@ AFRAME.registerComponent('player-movement', {
       el.object3D.position.x += px - center.x;
       el.object3D.position.z += pz - center.z;
       el.object3D.position.y += py - box.min.y;
+    });
+  });
+
+  // ===== INFO-PANEL =====
+  const infos = {
+    'battleship': {
+      titel: 'König-Klasse Schlachtschiffe bei Skagerrak',
+      text: 'Claus Bergen (1885–1964) war einer der bedeutendsten deutschen Marinemaler. Das Gemälde zeigt Schlachtschiffe der König-Klasse in der Seeschlacht am Skagerrak (31. Mai 1916) – der größten Seeschlacht des Ersten Weltkriegs zwischen der deutschen Hochseeflotte und der britischen Grand Fleet.',
+      bild: null
+    },
+    'breker-portrait': {
+      titel: 'Arno Breker – Porträt',
+      text: 'Arno Breker (1900–1991) war ein deutscher Bildhauer und Architekt. Unter dem Nationalsozialismus wurde er zum bevorzugten Künstler des Regimes und schuf monumentale Skulpturen für Repräsentationsbauten. Nach 1945 arbeitete er als freier Bildhauer weiter und erhielt zahlreiche internationale Aufträge.',
+      bild: null
+    },
+    'breker-pferd': {
+      titel: 'Mann mit Pferd (1982)',
+      text: 'Arno Breker schuf diese Bronzeplastik 1982. Die Darstellung eines nackten männlichen Aktes mit Pferd ist ein klassisches Motiv, das Breker sein ganzes Leben lang beschäftigte – inspiriert von der griechisch-römischen Antike und dem deutschen Idealismus des 19. Jahrhunderts.',
+      bild: null
+    },
+    'signal-1': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'signal-2': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'signal-3': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'signal-4': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'signal-5': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'signal-6': { titel: 'Exponat', text: '– Informationstext folgt –', bild: null },
+    'prometheus': {
+      titel: 'Prometheus',
+      text: 'Prometheus ist eine Gestalt aus der griechischen Mythologie. Als Titan stahl er das Feuer vom Olymp und brachte es den Menschen – als Symbol für Aufklärung, Fortschritt und die Kühnheit des Denkens. Zeus bestrafte ihn dafür mit ewiger Qual: angekettet an einen Felsen ließ er täglich einen Adler seine nachwachsende Leber fressen.',
+      bild: null
+    },
+    'ludwig': {
+      titel: 'Ludwig van Beethoven',
+      text: 'Ludwig van Beethoven (1770–1827) gilt als einer der bedeutendsten Komponisten der Musikgeschichte. Trotz zunehmender Taubheit schuf er einige seiner größten Werke – darunter die 9. Sinfonie – und revolutionierte die Musik der Romantik.',
+      bild: null
+    },
+    'irene': {
+      titel: 'Irene Ludwig',
+      text: 'Irene Ludwig (1927–2010) war eine deutsche Mäzenin und Kunstsammlerin. Gemeinsam mit ihrem Mann Peter Ludwig baute sie eine der bedeutendsten Kunstsammlungen Europas auf und stiftete zahlreiche Werke an Museen in Deutschland, Österreich und weltweit.',
+      bild: null
+    },
+    'hitler': {
+      titel: 'Adolf Hitler',
+      text: 'Adolf Hitler (1889–1945) war Führer des nationalsozialistischen Deutschlands (1933–1945). Sein Regime verübte den Holocaust und löste den Zweiten Weltkrieg aus, der über 70 Millionen Todesopfer forderte. Er gilt als einer der größten Verbrecher der Geschichte.',
+      bild: null
+    },
+  };
+
+  const panel     = document.getElementById('info-panel');
+  const panelImg  = document.getElementById('info-img');
+  const panelTitel= document.getElementById('info-titel');
+  const panelText = document.getElementById('info-text');
+  const klickHint = document.getElementById('klick-hint');
+  let hintTimer   = null;
+
+  document.getElementById('info-close').addEventListener('click', () => {
+    panel.classList.remove('offen');
+  });
+
+  function zeigeInfo(key) {
+    const info = infos[key];
+    if (!info) return;
+    panelTitel.textContent = info.titel;
+    panelText.textContent  = info.text;
+    if (info.bild) {
+      panelImg.src = info.bild;
+      panelImg.style.display = 'block';
+    } else {
+      panelImg.style.display = 'none';
+    }
+    panel.classList.add('offen');
+  }
+
+  // Klick-Events auf alle klickbaren Elemente
+  document.querySelectorAll('.klickbar').forEach(el => {
+    el.addEventListener('click', (evt) => {
+      const key = el.getAttribute('data-info') ||
+                  evt.target.getAttribute('data-info');
+      if (key) zeigeInfo(key);
+    });
+  });
+
+  // Hint anzeigen wenn Cursor über klickbares Objekt
+  document.querySelectorAll('.klickbar').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      klickHint.classList.add('sichtbar');
+      clearTimeout(hintTimer);
+    });
+    el.addEventListener('mouseleave', () => {
+      hintTimer = setTimeout(() => klickHint.classList.remove('sichtbar'), 300);
     });
   });
 
