@@ -577,8 +577,13 @@ AFRAME.registerComponent('player-movement', {
     zoomRaf = requestAnimationFrame(animateFov);
   }
 
-  // Doppelklick (Desktop)
-  window.addEventListener('dblclick', toggleZoom);
+  // Scrollrad (Desktop)
+  window.addEventListener('wheel', (e) => {
+    fovTarget = Math.max(20, Math.min(FOV_NORMAL, fovTarget + e.deltaY * 0.05));
+    zoomed = fovTarget < FOV_NORMAL;
+    if (zoomRaf) cancelAnimationFrame(zoomRaf);
+    zoomRaf = requestAnimationFrame(animateFov);
+  }, { passive: true });
 
   // Doppeltippen (Mobile) – nur rechte Hälfte damit Joystick nicht stört
   let lastTap = 0;
