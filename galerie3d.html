@@ -549,6 +549,46 @@ AFRAME.registerComponent('player-movement', {
       el.object3D.position.y += py - box.min.y;
     });
   });
+
+  // ===== ZOOM (Doppelklick / Doppeltippen) =====
+  const FOV_NORMAL = 80;
+  const FOV_ZOOM   = 38;
+  let zoomed      = false;
+  let fovCurrent  = FOV_NORMAL;
+  let fovTarget   = FOV_NORMAL;
+  let zoomRaf     = null;
+
+  function animateFov() {
+    const cam = document.getElementById('cam');
+    if (!cam) return;
+    fovCurrent += (fovTarget - fovCurrent) * 0.15;
+    cam.setAttribute('camera', 'fov', fovCurrent);
+    if (Math.abs(fovTarget - fovCurrent) > 0.1) {
+      zoomRaf = requestAnimationFrame(animateFov);
+    } else {
+      cam.setAttribute('camera', 'fov', fovTarget);
+    }
+  }
+
+  function toggleZoom() {
+    zoomed    = !zoomed;
+    fovTarget = zoomed ? FOV_ZOOM : FOV_NORMAL;
+    if (zoomRaf) cancelAnimationFrame(zoomRaf);
+    zoomRaf = requestAnimationFrame(animateFov);
+  }
+
+  // Doppelklick (Desktop)
+  window.addEventListener('dblclick', toggleZoom);
+
+  // Doppeltippen (Mobile) – nur rechte Hälfte damit Joystick nicht stört
+  let lastTap = 0;
+  window.addEventListener('touchend', (e) => {
+    const t = e.changedTouches[0];
+    if (t.clientX < window.innerWidth * 0.45) return; // Joystick-Zone ignorieren
+    const now = Date.now();
+    if (now - lastTap < 300) toggleZoom();
+    lastTap = now;
+  }, { passive: true });
 </script>
 
 </body>
