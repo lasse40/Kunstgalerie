@@ -15,11 +15,16 @@
     }
     #titel {
       position: fixed; top: 0; left: 0; right: 0;
-      text-align: center; padding: 10px;
+      text-align: center; padding: 10px 10px 16px;
       background: linear-gradient(rgba(0,0,0,.65), transparent);
       color: #d4b96a; font: normal 18px/1 Georgia, serif;
       letter-spacing: .2em; text-transform: uppercase;
       pointer-events: none; z-index: 100;
+    }
+    #titel span {
+      display: block; margin-top: 5px;
+      font-size: 11px; letter-spacing: .15em;
+      color: rgba(212,185,106,0.65); text-transform: none;
     }
     #hint {
       position: fixed; bottom: 10px; right: 10px;
@@ -105,7 +110,7 @@
   <p id="lade-text">Skulpturen werden geladen…</p>
 </div>
 
-<div id="titel">Kunstgalerie</div>
+<div id="titel">Kunstgalerie<span>Im Dienst des Regimes – Kunst im Nationalsozialismus</span></div>
 <div id="hint">
   <span id="hint-mobile">&#x25CE; Joystick links &bull; Wischen rechts zum Schauen</span>
   <span id="hint-desktop">WASD bewegen &bull; Maus ziehen zum Schauen</span>
